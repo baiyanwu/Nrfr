@@ -22,6 +22,9 @@ import com.github.nrfr.R
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    fun openUrl(url: String) {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    }
 
     Scaffold(
         topBar = {
@@ -75,12 +78,12 @@ fun AboutScreen(onBack: () -> Unit) {
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            "• 修改 SIM 卡的国家码配置，可用于解除部分应用的地区限制\n" +
-                                    "• 帮助使用海外 SIM 卡时获得更好的本地化体验\n" +
-                                    "• 解决部分应用识别 SIM 卡地区错误的问题\n" +
-                                    "• 无需 Root 权限，无需修改系统文件，安全且可随时还原\n" +
-                                    "• 支持 Android 8 及以上系统版本\n" +
-                                    "• 支持双卡设备，可分别配置不同国家码",
+                            "• Android 16 适配版 SIM 卡国家码修改工具\n" +
+                                    "• 基于 Shizuku 调用系统能力，无需 Root 权限\n" +
+                                    "• 通过双 APK helper 兼容 Android 16 的隐藏 API 限制\n" +
+                                    "• 支持查看 SIM1 / SIM2 当前配置和覆盖状态\n" +
+                                    "• 支持双卡设备，可分别配置不同国家码\n" +
+                                    "• 配置可保存，也可一键还原当前覆盖",
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -88,9 +91,9 @@ fun AboutScreen(onBack: () -> Unit) {
 
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
 
-                // 作者信息
+                // 维护信息
                 Text(
-                    "作者信息",
+                    "维护信息",
                     style = MaterialTheme.typography.titleMedium
                 )
                 Card(
@@ -100,25 +103,18 @@ fun AboutScreen(onBack: () -> Unit) {
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("作者: Antkites")
+                        Text("维护者: baiyanwu")
                         Text(
-                            "GitHub: Ackites",
+                            "当前项目: baiyanwu/Nrfr",
                             modifier = Modifier.clickable {
-                                context.startActivity(
-                                    Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Ackites"))
-                                )
+                                openUrl("https://github.com/baiyanwu/Nrfr")
                             },
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            "X (Twitter): @actkites",
+                            "上游项目: Ackites/Nrfr",
                             modifier = Modifier.clickable {
-                                context.startActivity(
-                                    Intent(
-                                        Intent.ACTION_VIEW,
-                                        Uri.parse("https://x.com/intent/follow?screen_name=actkites")
-                                    )
-                                )
+                                openUrl("https://github.com/Ackites/Nrfr")
                             },
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -140,23 +136,18 @@ fun AboutScreen(onBack: () -> Unit) {
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            "本项目已在 GitHub 开源",
+                            "本项目 fork 自 Ackites/Nrfr，基于 Apache-2.0 许可证二次开发。",
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth()
                         )
                         Text(
-                            "访问项目主页",
+                            "查看开源许可证",
                             color = MaterialTheme.colorScheme.primary,
                             textAlign = TextAlign.Center,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    context.startActivity(
-                                        Intent(
-                                            Intent.ACTION_VIEW,
-                                            Uri.parse("https://github.com/Ackites/Nrfr")
-                                        )
-                                    )
+                                    openUrl("https://github.com/baiyanwu/Nrfr/blob/master/LICENSE")
                                 }
                         )
                     }
@@ -166,7 +157,7 @@ fun AboutScreen(onBack: () -> Unit) {
 
                 // 版权信息
                 Text(
-                    "© 2024 Antkites. All rights reserved.",
+                    "© 2026 baiyanwu. 基于 Apache-2.0 许可证发布。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

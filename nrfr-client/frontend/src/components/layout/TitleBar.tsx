@@ -6,8 +6,12 @@ import {BrowserOpenURL} from '../../../wailsjs/runtime/runtime';
 export const TitleBar: React.FC = () => {
     const [showAbout, setShowAbout] = useState(false);
 
-    const handleFollow = () => {
-        BrowserOpenURL('https://x.com/intent/follow?screen_name=actkites');
+    const openProject = () => {
+        BrowserOpenURL('https://github.com/baiyanwu/Nrfr');
+    };
+
+    const openUpstream = () => {
+        BrowserOpenURL('https://github.com/Ackites/Nrfr');
     };
 
     return (
@@ -43,9 +47,9 @@ export const TitleBar: React.FC = () => {
 
             {showAbout && (
                 <div
-                    className="fixed right-2 top-10 w-72 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-4 z-50"
+                    className="fixed right-2 top-10 w-80 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-4 z-50"
                     style={{"--wails-draggable": "no-drag"} as React.CSSProperties}>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                         <button
                             onClick={() => setShowAbout(false)}
                             className="absolute right-2 top-2 text-gray-400 hover:text-gray-600 transition-colors"
@@ -59,20 +63,37 @@ export const TitleBar: React.FC = () => {
                             </svg>
                         </button>
 
-                        <div className="flex items-center space-x-3 bg-blue-50/50 rounded-lg p-3">
-                            <span className="text-gray-600">关注作者：</span>
+                        <div className="pr-6">
+                            <div className="text-sm font-semibold text-gray-800">Nrfr Android 16 适配版</div>
+                            <p className="mt-1 text-xs leading-5 text-gray-600">
+                                免 Root 的 SIM 卡国家码修改工具，使用 Shizuku 和双 APK helper 适配 Android 16。
+                            </p>
+                        </div>
+
+                        <div className="space-y-2 rounded-lg bg-blue-50/60 p-3 text-sm">
+                            <div className="flex items-center justify-between">
+                                <span className="text-gray-600">维护者</span>
+                                <span className="font-medium text-gray-800">baiyanwu</span>
+                            </div>
                             <button
-                                onClick={handleFollow}
-                                className="flex items-center space-x-1.5 text-blue-500 hover:text-blue-600 transition-colors"
+                                onClick={openProject}
+                                className="flex w-full items-center justify-between text-blue-500 transition-colors hover:text-blue-600"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24"
-                                     fill="currentColor">
-                                    <path
-                                        d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                                </svg>
-                                <span className="font-medium">@actkites</span>
+                                <span>当前项目</span>
+                                <span className="font-medium">baiyanwu/Nrfr</span>
+                            </button>
+                            <button
+                                onClick={openUpstream}
+                                className="flex w-full items-center justify-between text-blue-500 transition-colors hover:text-blue-600"
+                            >
+                                <span>上游项目</span>
+                                <span className="font-medium">Ackites/Nrfr</span>
                             </button>
                         </div>
+
+                        <p className="text-xs leading-5 text-gray-500">
+                            本项目 fork 自 Ackites/Nrfr，基于 Apache-2.0 许可证二次开发。
+                        </p>
                     </div>
                 </div>
             )}
