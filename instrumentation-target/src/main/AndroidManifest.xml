@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fork 变更说明：本文件为 Ackites/Nrfr fork 新增，声明无桌面入口的 instrumentation target 包。 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+            android:allowBackup="false"
+            android:label="Nrfr Instrumentation Target"
+            android:supportsRtl="true"/>
+
+</manifest>

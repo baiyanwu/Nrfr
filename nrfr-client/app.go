@@ -1,5 +1,7 @@
 package main
 
+// Fork 变更说明：本文件基于 Ackites/Nrfr 修改，增加双 APK 安装检查和跨平台进程配置。
+
 import (
 	"context"
 	"fmt"
@@ -9,11 +11,18 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/electricbubble/gadb"
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
+)
+
+const (
+	shizukuPackageName                   = "moe.shizuku.privileged.api"
+	nrfrPackageName                      = "com.github.nrfr"
+	nrfrInstrumentationTargetPackageName = "com.github.nrfr.instrumentationtarget"
+	nrfrApkFileName                      = "nrfr.apk"
+	nrfrInstrumentationTargetApkFileName = "nrfr-instrumentation-target.apk"
 )
 
 // App struct
@@ -84,21 +93,11 @@ func (a *App) startup(ctx context.Context) {
 
 	// 检查 ADB 服务器是否已在运行
 	cmd := exec.Command(adbPath, "devices")
-	if runtime.GOOS == "windows" {
-		cmd.SysProcAttr = &syscall.SysProcAttr{
-			HideWindow:    true,
-			CreationFlags: 0x08000000, // CREATE_NO_WINDOW
-		}
-	}
+	cmd.SysProcAttr = hiddenWindowSysProcAttr()
 	if err := cmd.Run(); err != nil {
 		// ADB 服务器未运行，启动它
 		startCmd := exec.Command(adbPath, "start-server")
-		if runtime.GOOS == "windows" {
-			startCmd.SysProcAttr = &syscall.SysProcAttr{
-				HideWindow:    true,
-				CreationFlags: 0x08000000, // CREATE_NO_WINDOW
-			}
-		}
+		startCmd.SysProcAttr = hiddenWindowSysProcAttr()
 		if err := startCmd.Run(); err != nil {
 			wailsruntime.LogError(ctx, fmt.Sprintf("启动ADB服务器失败: %v", err))
 		}
@@ -118,12 +117,7 @@ func (a *App) shutdown(ctx context.Context) {
 	// 关闭 ADB 服务器
 	if a.adbPath != "" {
 		cmd := exec.Command(a.adbPath, "kill-server")
-		if runtime.GOOS == "windows" {
-			cmd.SysProcAttr = &syscall.SysProcAttr{
-				HideWindow:    true,
-				CreationFlags: 0x08000000, // CREATE_NO_WINDOW
-			}
-		}
+		cmd.SysProcAttr = hiddenWindowSysProcAttr()
 		if err := cmd.Run(); err != nil {
 			wailsruntime.LogError(ctx, fmt.Sprintf("关闭ADB服务器失败: %v", err))
 		}
@@ -187,12 +181,14 @@ func (a *App) CheckApps() AppStatus {
 	}
 
 	// 检查 Shizuku
-	shizukuInstalled, _ := a.isPackageInstalled("moe.shizuku.privileged.api")
+	shizukuInstalled, _ := a.isPackageInstalled(shizukuPackageName)
 
-	// 检查 Nrfr
-	nrfrInstalled, _ := a.isPackageInstalled("com.github.nrfr")
+	// 主包和 instrumentation target 同时存在，才算 Nrfr 安装完整。
+	nrfrMainInstalled, _ := a.isPackageInstalled(nrfrPackageName)
+	nrfrTargetInstalled, _ := a.isPackageInstalled(nrfrInstrumentationTargetPackageName)
+	nrfrInstalled := nrfrMainInstalled && nrfrTargetInstalled
 	needUpdate := false
-	if nrfrInstalled {
+	if nrfrMainInstalled || nrfrTargetInstalled {
 		needUpdate, _ = a.CheckNrfrUpdate()
 	}
 
@@ -270,42 +266,51 @@ func (a *App) InstallNrfr() error {
 		return fmt.Errorf("未选择设备")
 	}
 
-	// 从本地资源目录推送 APK 到设备
+	if err := a.installResourceApk(nrfrApkFileName, "Nrfr"); err != nil {
+		return err
+	}
+
+	if err := a.installResourceApk(nrfrInstrumentationTargetApkFileName, "Nrfr helper"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *App) installResourceApk(fileName string, appName string) error {
 	execPath, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("获取执行路径失败: %v", err)
 	}
 	execDir := filepath.Dir(execPath)
-	localApk := filepath.Join(execDir, "resources", "nrfr.apk")
-	remoteApk := "/data/local/tmp/nrfr.apk"
+	localApk := filepath.Join(execDir, "resources", fileName)
+	remoteApk := "/data/local/tmp/" + fileName
 
 	// 检查文件是否存在
 	if _, err := os.Stat(localApk); os.IsNotExist(err) {
-		return fmt.Errorf("nrfr apk 文件不存在: %s", localApk)
+		return fmt.Errorf("%s apk 文件不存在: %s", appName, localApk)
 	}
 
 	// 推送 APK 文件
 	file, err := os.Open(localApk)
 	if err != nil {
-		return fmt.Errorf("打开 Nrfr APK 文件失败: %v", err)
+		return fmt.Errorf("打开 %s APK 文件失败: %v", appName, err)
 	}
 	defer file.Close()
 
 	err = a.selectedDevice.Push(file, remoteApk, time.Now())
 	if err != nil {
-		return fmt.Errorf("推送 Nrfr APK 文件失败: %v", err)
+		return fmt.Errorf("推送 %s APK 文件失败: %v", appName, err)
 	}
 
-	// 安装 APK
-	_, err = a.selectedDevice.RunShellCommand("pm", "install", "-r", remoteApk)
-	if err != nil {
-		return fmt.Errorf("安装 Nrfr 失败: %v", err)
-	}
+	defer func() {
+		if _, err := a.selectedDevice.RunShellCommand("rm", remoteApk); err != nil {
+			wailsruntime.LogWarning(a.ctx, fmt.Sprintf("清理临时文件失败: %v", err))
+		}
+	}()
 
-	// 清理临时文件
-	_, err = a.selectedDevice.RunShellCommand("rm", remoteApk)
-	if err != nil {
-		wailsruntime.LogWarning(a.ctx, fmt.Sprintf("清理临时文件失败: %v", err))
+	if _, err = a.selectedDevice.RunShellCommand("pm", "install", "-r", remoteApk); err != nil {
+		return fmt.Errorf("安装 %s 失败: %v", appName, err)
 	}
 
 	return nil
@@ -350,12 +355,7 @@ func (a *App) WindowClose() {
 	// 先关闭 ADB 服务器
 	if a.adbPath != "" {
 		cmd := exec.Command(a.adbPath, "kill-server")
-		if runtime.GOOS == "windows" {
-			cmd.SysProcAttr = &syscall.SysProcAttr{
-				HideWindow:    true,
-				CreationFlags: 0x08000000, // CREATE_NO_WINDOW
-			}
-		}
+		cmd.SysProcAttr = hiddenWindowSysProcAttr()
 		_ = cmd.Run() // 忽略错误，因为我们即将退出程序
 	}
 	wailsruntime.Quit(a.ctx)
@@ -368,7 +368,7 @@ func (a *App) StartNrfr() error {
 	}
 
 	// 使用 monkey 启动 Nrfr
-	_, err := a.selectedDevice.RunShellCommand("monkey", "-p", "com.github.nrfr", "1")
+	_, err := a.selectedDevice.RunShellCommand("monkey", "-p", nrfrPackageName, "1")
 	if err != nil {
 		return fmt.Errorf("failed to start nrfr: %v", err)
 	}
@@ -436,17 +436,22 @@ func (a *App) CheckNrfrUpdate() (bool, error) {
 	}
 
 	// 检查是否已安装
-	installed, err := a.isPackageInstalled("com.github.nrfr")
+	mainInstalled, err := a.isPackageInstalled(nrfrPackageName)
 	if err != nil {
 		return false, err
 	}
 
-	if !installed {
-		return true, nil // 未安装，需要安装
+	targetInstalled, err := a.isPackageInstalled(nrfrInstrumentationTargetPackageName)
+	if err != nil {
+		return false, err
+	}
+
+	if !mainInstalled || !targetInstalled {
+		return true, nil // 主包或 helper 缺失，需要重新安装
 	}
 
 	// 获取已安装版本
-	currentVersion, err := a.GetAppVersion("com.github.nrfr")
+	currentVersion, err := a.GetAppVersion(nrfrPackageName)
 	if err != nil {
 		return false, err
 	}

@@ -1,3 +1,4 @@
+// Fork 变更说明：本文件基于 Ackites/Nrfr 修改，适配 Android 16 兼容依赖。
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -6,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.github.nrfr"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.github.nrfr"

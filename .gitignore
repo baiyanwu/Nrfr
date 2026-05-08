@@ -1,9 +1,11 @@
 *.iml
+# Fork 变更说明：本文件基于 Ackites/Nrfr 修改，补充子模块构建产物忽略规则。
 .gradle
 /local.properties
 /.idea
 .DS_Store
 /build
+**/build/
 /captures
 .externalNativeBuild
 .cxx

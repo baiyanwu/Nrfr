@@ -1,5 +1,7 @@
 name: Build Release
 
+# Fork 变更说明：本工作流基于 Ackites/Nrfr 修改，增加 Android 16 双 APK helper 构建与发布。
+
 on:
   push:
     tags:
@@ -86,7 +88,7 @@ jobs:
         run: |
           gradle wrapper
           chmod +x ./gradlew
-          ./gradlew assembleDebug
+          ./gradlew :app:assembleDebug :instrumentation-target:assembleDebug
         shell: bash
 
       # 设置 Go 环境
@@ -125,7 +127,9 @@ jobs:
       - name: Copy Android APK
         run: |
           cp app/build/outputs/apk/debug/app-debug.apk nrfr-client/build/bin/resources/nrfr.apk
+          cp instrumentation-target/build/outputs/apk/debug/instrumentation-target-debug.apk nrfr-client/build/bin/resources/nrfr-instrumentation-target.apk
           cp app/build/outputs/apk/debug/app-debug.apk nrfr-${{ steps.version.outputs.version }}.apk
+          cp instrumentation-target/build/outputs/apk/debug/instrumentation-target-debug.apk nrfr-instrumentation-target-${{ steps.version.outputs.version }}.apk
         shell: bash
 
       # 下载 platform-tools
@@ -159,6 +163,7 @@ jobs:
           files: |
             nrfr-client/nrfr-${{ steps.version.outputs.version }}-release.zip
             nrfr-${{ steps.version.outputs.version }}.apk
+            nrfr-instrumentation-target-${{ steps.version.outputs.version }}.apk
           body_path: CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
