@@ -15,14 +15,16 @@
 
 ## 安装方式
 
-推荐使用桌面客户端安装。用户只需要在客户端里点击一次安装，客户端会自动安装：
+1. 推荐使用桌面客户端安装。用户只需要在客户端里点击一次安装，客户端会自动安装：
 
 - `nrfr.apk`
 - `nrfr-instrumentation-target.apk`
 
-手动安装 Release APK 时，需要两个 APK 都安装。只安装 `nrfr.apk` 可以打开应用，但保存/还原运营商配置会因为缺少 helper APK 而失败。
+2. 手动安装 Release APK 时，需要两个 APK 都安装。只安装 `nrfr.apk` 可以打开应用，但保存/还原运营商配置会因为缺少 helper APK 而失败。
 
 helper APK 的包名是 `com.github.nrfr.instrumentationtarget`，没有桌面图标，正常情况下用户不需要直接打开它。
+
+release 安装包位置：https://github.com/baiyanwu/Nrfr/releases/tag/v1.0.3
 
 ## 使用前提
 
