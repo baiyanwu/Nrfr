@@ -1,16 +1,23 @@
 package com.github.nrfr.manager
 
-// Fork 变更说明：本文件基于 Ackites/Nrfr 修改，适配 Android 16 双 APK helper 写入链路。
+// Fork 变更说明：本文件基于 Ackites/Nrfr 修改，按系统版本选择单 APK 或旧 helper 写入链路。
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import android.os.IBinder
 import android.os.PersistableBundle
 import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
 import android.telephony.CarrierConfigManager as AndroidCarrierConfigManager
+import androidx.core.content.ContextCompat
 import com.github.nrfr.R
 import com.github.nrfr.model.SimCardInfo
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.shizuku.Shizuku
+import rikka.shizuku.ShizukuBinderWrapper
 import java.io.InputStream
 
 object CarrierConfigManager {
@@ -18,6 +25,7 @@ object CarrierConfigManager {
     const val CONFIG_CARRIER_NAME = "carrier_name"
 
     private const val INSTRUMENTATION_CLASS = "com.github.nrfr.CarrierConfigInstrumentation"
+    private const val LEGACY_INSTRUMENTATION_CLASS = "com.github.nrfr.LegacyCarrierConfigInstrumentation"
     private const val INSTRUMENTATION_TARGET_PACKAGE = "com.github.nrfr.instrumentationtarget"
     private const val INSTRUMENTATION_RESULT_PREFIX = "INSTRUMENTATION_RESULT: "
     private val PHONE_ID_PATTERN = Regex("""^Phone Id = (\d+)""")
@@ -42,7 +50,9 @@ object CarrierConfigManager {
 
     private fun getSubIdForSlot(slotIndex: Int): Int? {
         return try {
-            HiddenApiBypass.addHiddenApiExemptions("L")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                HiddenApiBypass.addHiddenApiExemptions("L")
+            }
             val getSubId = SubscriptionManager::class.java.getDeclaredMethod(
                 "getSubId",
                 Int::class.javaPrimitiveType
@@ -54,7 +64,15 @@ object CarrierConfigManager {
         }
     }
 
+    // This optional fallback never requests a new permission: the runtime guard below
+    // skips it when READ_PHONE_STATE is absent, and access failures are caught.
+    @SuppressLint("MissingPermission")
     private fun getCurrentConfigByPublicApi(context: Context, subId: Int): Map<String, String> {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return emptyMap()
+        }
         return try {
             val manager = context.getSystemService(AndroidCarrierConfigManager::class.java)
                 ?: return emptyMap()
@@ -185,16 +203,38 @@ object CarrierConfigManager {
 
     fun resetCarrierConfig(context: Context, subId: Int): CarrierConfigOperationResult {
         val warnings = mutableListOf<String>()
+        val persistentOverridePresent = getPersistentOverrideState(context, subId)
 
         overrideCarrierConfig(context, subId, null, persistent = false)
 
-        runCatching {
-            overrideCarrierConfig(context, subId, null, persistent = true)
-        }.onFailure { error ->
-            warnings.add(formatPersistentResetWarning(context, error))
+        // Only skip when dumpsys explicitly confirms there is no persistent override.
+        if (persistentOverridePresent != false) {
+            runCatching {
+                overrideCarrierConfig(context, subId, null, persistent = true)
+            }.onFailure { error ->
+                warnings.add(formatPersistentResetWarning(context, error))
+            }
         }
 
         return CarrierConfigOperationResult(warnings)
+    }
+
+    private fun getPersistentOverrideState(context: Context, subId: Int): Boolean? = runCatching {
+        val slot = (0..1).firstOrNull { getSubIdForSlot(it) == subId }
+            ?: return@runCatching null
+        parsePersistentOverrideState(runShellCommand(context, "dumpsys carrier_config"), slot)
+    }.getOrNull()
+
+    internal fun parsePersistentOverrideState(output: String, slot: Int): Boolean? {
+        var currentPhoneId: Int? = null
+        output.lineSequence().forEach { line ->
+            PHONE_ID_PATTERN.find(line)?.let { currentPhoneId = it.groupValues[1].toIntOrNull() }
+            if (currentPhoneId == slot && line.trim().startsWith("mPersistentOverrideConfigs")) {
+                val value = line.substringAfter(':', missingDelimiterValue = "").trim()
+                return value != "null"
+            }
+        }
+        return null
     }
 
     private fun overrideCarrierConfig(
@@ -203,6 +243,12 @@ object CarrierConfigManager {
         bundle: PersistableBundle?,
         persistent: Boolean
     ) {
+        // UiAutomation permission adoption was added in Android 10. Keep the original
+        // Shizuku Binder route for Android 8-9 instead of calling an unavailable API.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            overrideLegacyCarrierConfig(subId, bundle, persistent)
+            return
+        }
         val arguments = mutableListOf(
             "subId" to subId.toString(),
             "persistent" to persistent.toString()
@@ -219,26 +265,57 @@ object CarrierConfigManager {
             }
         }
 
-        runInstrumentation(context, arguments, relaunchApp = true)
+        runInstrumentation(context, arguments)
     }
 
+    // This fallback only runs on Android 8-9, before the restrictions flagged for Android 14+.
+    @SuppressLint("SoonBlockedPrivateApi")
+    private fun overrideLegacyCarrierConfig(subId: Int, bundle: PersistableBundle?, persistent: Boolean) {
+        check(Build.VERSION.SDK_INT < Build.VERSION_CODES.Q)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            HiddenApiBypass.addHiddenApiExemptions("L")
+        }
+        val service = Class.forName("android.os.ServiceManager")
+            .getDeclaredMethod("getService", String::class.java)
+            .invoke(null, "carrier_config") as? IBinder
+            ?: throw IllegalStateException("Carrier configuration service is unavailable")
+        val loader = Class.forName("com.android.internal.telephony.ICarrierConfigLoader\$Stub")
+            .getDeclaredMethod("asInterface", IBinder::class.java)
+            .invoke(null, ShizukuBinderWrapper(service))
+            ?: throw IllegalStateException("Carrier configuration service is unavailable")
+        try {
+            CarrierConfigOverrideApi.invoke(loader, subId, bundle, persistent)
+        } catch (error: NoSuchMethodException) {
+            throw IllegalStateException("This Android version does not provide carrier configuration overrides", error)
+        }
+    }
+
+    internal fun supportsNoRestart(sdk: Int): Boolean = sdk >= Build.VERSION_CODES.S
+
+    @Synchronized
     private fun runInstrumentation(
         context: Context,
-        arguments: List<Pair<String, String>>,
-        relaunchApp: Boolean
+        arguments: List<Pair<String, String>>
     ): InstrumentationResult {
-        ensureInstrumentationTargetInstalled(context)
+        val singleApk = supportsNoRestart(Build.VERSION.SDK_INT)
+        if (!singleApk) {
+            ensureInstrumentationTargetInstalled(context)
+        }
 
         val instrumentCommand = mutableListOf("am", "instrument", "-w")
+        if (singleApk) {
+            instrumentCommand.add("--no-restart")
+        }
         arguments.forEach { (key, value) ->
             instrumentCommand.addAll(listOf("-e", key, value))
         }
-        instrumentCommand.add("${context.packageName}/$INSTRUMENTATION_CLASS")
+        val instrumentationClass = if (singleApk) INSTRUMENTATION_CLASS else LEGACY_INSTRUMENTATION_CLASS
+        instrumentCommand.add("${context.packageName}/$instrumentationClass")
 
-        // 写入时 instrumentation 可能影响前台状态，命令结束后拉起主应用，保证用户仍停留在操作界面。
+        // Android 12+ retains the current process; older systems keep the helper's relaunch behavior.
         val script = buildString {
             append(instrumentCommand.joinToString(" ") { shellQuote(it) })
-            if (relaunchApp) {
+            if (!singleApk) {
                 append("; status=\$?; ")
                 append("monkey -p ")
                 append(shellQuote(context.packageName))
@@ -257,12 +334,7 @@ object CarrierConfigManager {
         val output = stdout.toString()
         val error = stderr.toString()
         val result = parseInstrumentationResult(output)
-        if (
-            exitCode != 0 ||
-            result.code == 0 ||
-            result.values["result"] == "failed" ||
-            result.values.containsKey("error")
-        ) {
+        if (!result.isSuccessful(exitCode)) {
             throw IllegalStateException(
                 listOf(output, error)
                     .filter { it.isNotBlank() }
@@ -326,7 +398,6 @@ object CarrierConfigManager {
                 }
             )
         }
-
         return stdout.toString()
     }
 
@@ -380,7 +451,11 @@ object CarrierConfigManager {
     internal data class InstrumentationResult(
         val values: Map<String, String>,
         val code: Int?
-    )
+    ) {
+        fun isSuccessful(exitCode: Int): Boolean =
+            exitCode == 0 && code == android.app.Activity.RESULT_OK &&
+                values["result"] == "ok" && !values.containsKey("error")
+    }
 
     data class CarrierConfigOperationResult(
         val warnings: List<String> = emptyList()

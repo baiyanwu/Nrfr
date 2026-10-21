@@ -44,7 +44,7 @@
     <string name="operation_success_with_warnings">%1$s，%2$s</string>
     <string name="warning_separator">；</string>
     <string name="about_feature_intro">功能介绍</string>
-    <string name="about_feature_details">• Android 16 适配版 SIM 卡国家码修改工具\n• 基于 Shizuku 调用系统能力，无需 Root 权限\n• 通过双 APK helper 兼容 Android 16 的隐藏 API 限制\n• 支持查看 SIM1 / SIM2 当前配置和覆盖状态\n• 支持双卡设备，可分别配置不同国家码\n• 配置可保存，也可一键还原当前覆盖</string>
+    <string name="about_feature_details">• Android 16 适配版 SIM 卡国家码修改工具\n• 基于 Shizuku 调用系统能力，无需 Root 权限\n• Android 12 及以上只需主 APK；Android 10–11 需要 helper\n• 支持查看 SIM1 / SIM2 当前配置和覆盖状态\n• 支持双卡设备，可分别配置不同国家码\n• 配置可保存，也可一键还原当前覆盖</string>
     <string name="maintenance_info">维护信息</string>
     <string name="maintainer">维护者：baiyanwu</string>
     <string name="current_project">当前项目：baiyanwu/Nrfr</string>

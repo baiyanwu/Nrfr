@@ -8,15 +8,33 @@ import android.app.Activity
 import android.app.Instrumentation
 import android.content.Context
 import android.os.Bundle
+import android.os.Build
 import android.os.PersistableBundle
 import android.telephony.CarrierConfigManager
+import androidx.annotation.RequiresApi
+import com.github.nrfr.manager.CarrierConfigOverrideApi
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 
-class CarrierConfigInstrumentation : Instrumentation() {
+open class CarrierConfigInstrumentation : Instrumentation() {
+    private lateinit var operationArguments: Bundle
+
     override fun onCreate(arguments: Bundle) {
         super.onCreate(arguments)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            finish(Activity.RESULT_CANCELED, Bundle().apply {
+                putString(RESULT_KEY, "failed")
+                putString(ERROR_KEY, "Instrumentation requires Android 10 or later")
+            })
+            return
+        }
+        operationArguments = Bundle(arguments)
         start()
+    }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
+    override fun onStart() {
+        super.onStart()
+        val arguments = operationArguments
         val result = Bundle()
         try {
             HiddenApiBypass.addHiddenApiExemptions("L")
@@ -25,8 +43,9 @@ class CarrierConfigInstrumentation : Instrumentation() {
                 ?: throw IllegalArgumentException(context.getString(R.string.invalid_subscription_id))
             val manager = targetContext.getSystemService(Context.CARRIER_CONFIG_SERVICE)
                     as CarrierConfigManager
+            val isQuery = arguments.getString(ARG_QUERY)?.toBooleanStrictOrNull() == true
 
-            if (arguments.getString(ARG_QUERY)?.toBooleanStrictOrNull() == true) {
+            if (isQuery) {
                 queryCurrentConfig(manager, subId, result)
             } else {
                 val persistent = arguments.getString(ARG_PERSISTENT)?.toBooleanStrictOrNull() ?: true
@@ -50,6 +69,8 @@ class CarrierConfigInstrumentation : Instrumentation() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
+    @SuppressLint("MissingPermission") // READ_PHONE_STATE is adopted below and always released.
     private fun queryCurrentConfig(
         manager: CarrierConfigManager,
         subId: Int,
@@ -97,14 +118,7 @@ class CarrierConfigInstrumentation : Instrumentation() {
         overrideValues: PersistableBundle?,
         persistent: Boolean
     ) {
-        val method = CarrierConfigManager::class.java.getDeclaredMethod(
-            "overrideConfig",
-            Int::class.javaPrimitiveType,
-            PersistableBundle::class.java,
-            Boolean::class.javaPrimitiveType
-        )
-        method.isAccessible = true
-        method.invoke(manager, subId, overrideValues, persistent)
+        CarrierConfigOverrideApi.invoke(manager, subId, overrideValues, persistent)
     }
 
     companion object {

@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version, for example v1.0.4"
+        description: "Release version, for example v1.0.5"
         required: true
         type: string
       prerelease:
@@ -56,6 +56,12 @@ jobs:
 
           echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
 
+          APP_VERSION=$(sed -n 's/^nrfr.versionName=//p' gradle.properties)
+          if [[ "${VERSION}" != "v${APP_VERSION}" ]]; then
+            echo "Release tag ${VERSION} does not match app version ${APP_VERSION}."
+            exit 1
+          fi
+
           VERSION_HEADER="## ${VERSION}"
           awk -v header="${VERSION_HEADER}" '
             index($0, header) == 1 { capture = 1 }
@@ -86,6 +92,7 @@ jobs:
         run: >-
           ./gradlew --no-daemon --stacktrace
           :app:testDebugUnitTest
+          :app:lintDebug
           :app:assembleDebug
           :instrumentation-target:assembleDebug
 

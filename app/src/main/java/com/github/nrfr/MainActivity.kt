@@ -2,6 +2,7 @@ package com.github.nrfr
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -53,8 +54,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         // 初始化 Hidden API 访问
-        HiddenApiBypass.addHiddenApiExemptions("L")
-        HiddenApiBypass.addHiddenApiExemptions("I")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            HiddenApiBypass.addHiddenApiExemptions("L")
+            HiddenApiBypass.addHiddenApiExemptions("I")
+        }
 
         // 检查 Shizuku 状态
         checkShizukuStatus()

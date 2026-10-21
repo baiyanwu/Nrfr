@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Fork 变更说明：本文件基于 Ackites/Nrfr 修改，增加 Android 16 instrumentation helper 入口。 -->
+<!-- Fork 变更说明：本文件基于 Ackites/Nrfr 修改，保留主应用和旧 helper 的 instrumentation 入口。 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools">
 
     <instrumentation
             android:name=".CarrierConfigInstrumentation"
+            android:targetPackage="${applicationId}"
+            android:handleProfiling="false"
+            android:functionalTest="false"/>
+
+    <instrumentation
+            android:name=".LegacyCarrierConfigInstrumentation"
             android:targetPackage="com.github.nrfr.instrumentationtarget"
             android:handleProfiling="false"
             android:functionalTest="false"/>

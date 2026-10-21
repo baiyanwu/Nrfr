@@ -4,6 +4,28 @@
 
 This file records notable changes for each Nrfr release.
 
+## v1.0.5 — 2026-10-21
+
+### 中文
+
+- Android 12 及以上改为主 APK＋Shizuku，使用自身 Instrumentation 和 `--no-restart`，配置操作期间保留主应用进程，不再要求安装 helper。
+- Android 10–11 保留独立 helper 路径；发布包继续包含同版本 helper。Android 8–9 保留旧 Shizuku Binder 回退，但原生系统缺少覆盖接口，修改能力取决于 ROM。
+- 配置操作移至 Instrumentation 工作线程并串行执行，严格校验退出码、结果码和成功标记。
+- 还原配置时，仅在系统明确确认没有持久化覆盖时跳过持久化清理，避免 Android 16 上不必要的权限错误；未知状态或已有覆盖仍尝试清理并保留失败警告。
+- 兼容 Android 10 的双参数覆盖接口与新系统的三参数接口，补充版本分流、覆盖接口和失败结果测试，更新六种语言的应用说明。
+- Seeker / Android 16 已完成无 helper 的修改、还原和原配置恢复验证；Android 8–11 尚未做本轮实机复测，真实持久化覆盖的清理能力尚未验证。
+- 主应用与 helper 同步为 `1.0.5`（versionCode `5`）；更新安装说明，发布流程增加 Lint 和标签版本一致性检查。
+
+### English
+
+- Android 12+ now uses the main APK and Shizuku, with self-targeted Instrumentation and `--no-restart`. Configuration operations retain the main process and no longer require the helper.
+- Android 10–11 retains the separate helper path, and releases still include a matching helper APK. Android 8–9 retains the legacy Shizuku Binder fallback, but stock systems lack the override API; support depends on the ROM.
+- Run instrumentation work on its worker thread, serialize invocations, and require successful shell, instrumentation, and operation results.
+- Skip persistent reset only when the system explicitly reports no persistent override, avoiding unnecessary permission failures on Android 16. Existing or unknown persistent state still triggers a reset attempt and reports failures.
+- Support Android 10's two-argument override API and newer three-argument APIs, add routing and failure-result tests, and update app descriptions in all six languages.
+- On a Seeker running Android 16, verified changes, reset, and restoration of the original configuration without the helper. Android 8–11 devices and clearing actual persistent overrides have not been verified in this run.
+- Synchronize the app and helper at `1.0.5` (versionCode `5`), update installation instructions, and add Lint and tag/version checks to publishing.
+
 ## v1.0.4 — 2026-08-24
 
 ### 中文

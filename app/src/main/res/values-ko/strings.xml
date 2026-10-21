@@ -44,7 +44,7 @@
     <string name="operation_success_with_warnings">%1$s — %2$s</string>
     <string name="warning_separator">"; "</string>
     <string name="about_feature_intro">기능</string>
-    <string name="about_feature_details">• Android 16용 SIM 카드 국가 코드 수정 도구\n• Shizuku로 시스템 기능을 사용하며 Root 권한 불필요\n• 두 개의 APK helper로 Android 16 숨김 API 제한 지원\n• SIM1 / SIM2의 현재 구성과 재정의 상태 표시\n• 듀얼 SIM 기기에서 서로 다른 국가 코드 설정 가능\n• 구성을 저장하고 현재 재정의를 한 번에 복원</string>
+    <string name="about_feature_details">• Android 16용 SIM 카드 국가 코드 수정 도구\n• Shizuku로 시스템 기능을 사용하며 Root 권한 불필요\n• Android 12 이상은 기본 APK만 필요하며 Android 10–11은 helper 필요\n• SIM1 / SIM2의 현재 구성과 재정의 상태 표시\n• 듀얼 SIM 기기에서 서로 다른 국가 코드 설정 가능\n• 구성을 저장하고 현재 재정의를 한 번에 복원</string>
     <string name="maintenance_info">유지 관리 정보</string>
     <string name="maintainer">관리자: baiyanwu</string>
     <string name="current_project">현재 프로젝트: baiyanwu/Nrfr</string>

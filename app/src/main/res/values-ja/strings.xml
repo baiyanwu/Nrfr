@@ -44,7 +44,7 @@
     <string name="operation_success_with_warnings">%1$s — %2$s</string>
     <string name="warning_separator">；</string>
     <string name="about_feature_intro">機能</string>
-    <string name="about_feature_details">• Android 16 対応の SIM カード国コード変更ツール\n• Shizuku でシステム機能を利用するため Root 権限は不要\n• 2つの APK helper で Android 16 の Hidden API 制限に対応\n• SIM1 / SIM2 の現在の設定と上書き状態を表示\n• デュアル SIM 端末で個別の国コードを設定可能\n• 設定の保存と現在の上書きのワンタップ復元に対応</string>
+    <string name="about_feature_details">• Android 16 対応の SIM カード国コード変更ツール\n• Shizuku でシステム機能を利用するため Root 権限は不要\n• Android 12 以降はメイン APK のみ、Android 10–11 は helper が必要\n• SIM1 / SIM2 の現在の設定と上書き状態を表示\n• デュアル SIM 端末で個別の国コードを設定可能\n• 設定の保存と現在の上書きのワンタップ復元に対応</string>
     <string name="maintenance_info">メンテナンス情報</string>
     <string name="maintainer">メンテナー：baiyanwu</string>
     <string name="current_project">現在のプロジェクト：baiyanwu/Nrfr</string>

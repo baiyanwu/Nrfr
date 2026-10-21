@@ -44,7 +44,7 @@
     <string name="operation_success_with_warnings">%1$s — %2$s</string>
     <string name="warning_separator">"; "</string>
     <string name="about_feature_intro">Funciones</string>
-    <string name="about_feature_details">• Editor del código de país de la SIM adaptado a Android 16\n• Usa funciones del sistema mediante Shizuku, sin necesidad de Root\n• Usa dos APK helper para las restricciones de API ocultas de Android 16\n• Muestra la configuración y el estado de modificación de SIM1 / SIM2\n• Permite configurar códigos distintos en dispositivos con doble SIM\n• Guarda la configuración y restaura la modificación actual con un toque</string>
+    <string name="about_feature_details">• Editor del código de país de la SIM adaptado a Android 16\n• Usa funciones del sistema mediante Shizuku, sin necesidad de Root\n• Android 12 o posterior solo necesita el APK principal; Android 10–11 necesita helper\n• Muestra la configuración y el estado de modificación de SIM1 / SIM2\n• Permite configurar códigos distintos en dispositivos con doble SIM\n• Guarda la configuración y restaura la modificación actual con un toque</string>
     <string name="maintenance_info">Mantenimiento</string>
     <string name="maintainer">Responsable: baiyanwu</string>
     <string name="current_project">Proyecto actual: baiyanwu/Nrfr</string>

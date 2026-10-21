@@ -55,7 +55,7 @@
     <string name="warning_separator">"; "</string>
 
     <string name="about_feature_intro">Features</string>
-    <string name="about_feature_details">• SIM country-code editor adapted for Android 16\n• Uses Shizuku system capabilities; Root is not required\n• Uses a dual-APK helper to work with Android 16 hidden API restrictions\n• Shows the current configuration and override state for SIM 1 / SIM 2\n• Supports separate country-code settings on dual-SIM devices\n• Saves configuration and restores the current override in one tap</string>
+    <string name="about_feature_details">• SIM country-code editor adapted for Android 16\n• Uses Shizuku system capabilities; Root is not required\n• Android 12+ needs only the main APK; Android 10–11 needs the helper\n• Shows the current configuration and override state for SIM 1 / SIM 2\n• Supports separate country-code settings on dual-SIM devices\n• Saves configuration and restores the current override in one tap</string>
     <string name="maintenance_info">Maintenance</string>
     <string name="maintainer">Maintainer: baiyanwu</string>
     <string name="current_project">Current project: baiyanwu/Nrfr</string>

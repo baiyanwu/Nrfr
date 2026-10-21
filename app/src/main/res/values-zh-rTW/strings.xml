@@ -44,7 +44,7 @@
     <string name="operation_success_with_warnings">%1$s，%2$s</string>
     <string name="warning_separator">；</string>
     <string name="about_feature_intro">功能介紹</string>
-    <string name="about_feature_details">• 適用於 Android 16 的 SIM 卡國家碼修改工具\n• 透過 Shizuku 呼叫系統功能，無需 Root 權限\n• 透過雙 APK helper 相容 Android 16 的隱藏 API 限制\n• 支援查看 SIM1 / SIM2 的目前設定與覆寫狀態\n• 支援雙卡裝置，可分別設定不同國家碼\n• 可儲存設定，也可一鍵還原目前覆寫</string>
+    <string name="about_feature_details">• 適用於 Android 16 的 SIM 卡國家碼修改工具\n• 透過 Shizuku 呼叫系統功能，無需 Root 權限\n• Android 12 以上只需主 APK；Android 10–11 需要 helper\n• 支援查看 SIM1 / SIM2 的目前設定與覆寫狀態\n• 支援雙卡裝置，可分別設定不同國家碼\n• 可儲存設定，也可一鍵還原目前覆寫</string>
     <string name="maintenance_info">維護資訊</string>
     <string name="maintainer">維護者：baiyanwu</string>
     <string name="current_project">目前專案：baiyanwu/Nrfr</string>
