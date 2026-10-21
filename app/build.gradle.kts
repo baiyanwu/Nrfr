@@ -15,7 +15,19 @@ val releaseSigningProperties = localPropertiesFile
             file.inputStream().use { input -> load(input) }
         }
     }
-    ?.takeIf { properties ->
+    .let { local ->
+        (local ?: Properties()).apply {
+            mapOf(
+                "signing.storeFile" to "NRFR_SIGNING_STORE_FILE",
+                "signing.storePassword" to "NRFR_SIGNING_STORE_PASSWORD",
+                "signing.keyAlias" to "NRFR_SIGNING_KEY_ALIAS",
+                "signing.keyPassword" to "NRFR_SIGNING_KEY_PASSWORD",
+            ).forEach { (key, environment) ->
+                System.getenv(environment)?.takeIf { it.isNotBlank() }?.let { setProperty(key, it) }
+            }
+        }
+    }
+    .takeIf { properties ->
         listOf(
             "signing.storeFile",
             "signing.storePassword",

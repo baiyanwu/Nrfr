@@ -4,7 +4,7 @@
 
 基于 Shizuku 的免 Root SIM 卡运营商配置修改工具。
 
-## v1.0.5：Android 12+ 单 APK
+## v1.0.6：Android 12+ 单 APK
 
 Android 12 及以上只需安装主 APK，并保持 [Shizuku](https://github.com/RikkaApps/Shizuku) 已安装、运行和授权。配置操作通过主应用自身的 Instrumentation 执行，使用 `--no-restart` 保留主应用进程。
 
@@ -25,12 +25,12 @@ Android 12 及以上只需安装主 APK，并保持 [Shizuku](https://github.com
 
 ## 安装与升级
 
-从 [v1.0.5 发布页](https://github.com/baiyanwu/Nrfr/releases/tag/v1.0.5) 下载 APK，并先启动 Shizuku。
+从 [v1.0.6 发布页](https://github.com/baiyanwu/Nrfr/releases/tag/v1.0.6) 下载 APK，并先启动 Shizuku。
 
-**Android 12 及以上：** 只安装 `nrfr-v1.0.5.apk`。
+**Android 12 及以上：** 只安装 `nrfr-v1.0.6.apk`。
 
 ```bash
-adb install -r nrfr-v1.0.5.apk
+adb install -r nrfr-v1.0.6.apk
 ```
 
 旧版已安装的 helper 可以暂时保留；主应用不会在这些系统上依赖它。确认主应用配置修改和还原正常后，可以移除 helper。
@@ -38,15 +38,17 @@ adb install -r nrfr-v1.0.5.apk
 **Android 10–11：** 安装同一发布版本的两个 APK，先装 helper。
 
 ```bash
-adb install -r nrfr-instrumentation-target-v1.0.5.apk
-adb install -r nrfr-v1.0.5.apk
+adb install -r nrfr-instrumentation-target-v1.0.6.apk
+adb install -r nrfr-v1.0.6.apk
 ```
 
 helper 包名为 `com.github.nrfr.instrumentationtarget`，没有桌面图标，无需单独打开。旧系统的 helper 模块和执行分支继续保留。
 
 **Android 8–9：** 保留主 APK 的旧接口回退，但原生系统没有配置覆盖接口；安装 helper 不能补上系统缺失的接口。
 
-自动发布沿用现有的 Debug 签名构建。覆盖升级要求新旧 APK 的签名证书一致；自行构建、历史发布包和本地实测包的证书可能不同。签名不匹配时不会覆盖安装，请先核对版本来源和证书。
+从 v1.0.6 起，公开 APK 使用项目现有 `nrfr-release.jks` 的固定 Release 证书，主应用和 helper 共用签名，均为不可调试的 Release 构建。证书 SHA-256：`72c45f53872baa403d9bfb1c1f3eb6bedba6dabd1b7ab29c42f7d807b7131d49`。
+
+v1.0.4 公开包使用另一份 Debug 证书，无法直接覆盖升级到本版；同样，Seeker 的本地实测包不使用这份 Release 证书。签名不匹配时请先保留所需应用数据并确认迁移方式。临时 Debug 签名的 v1.0.5 已撤为草稿。后续使用同一 Release 证书的版本可覆盖升级。
 
 ## 提交 Issue
 
@@ -62,11 +64,11 @@ helper 包名为 `com.github.nrfr.instrumentationtarget`，没有桌面图标，
 
 产物位于 `app/build/outputs/apk/debug/app-debug.apk` 和 `instrumentation-target/build/outputs/apk/debug/instrumentation-target-debug.apk`。
 
-本地 Release 使用 `:app:assembleRelease :instrumentation-target:assembleRelease`。两个模块共用 `gradle.properties` 的版本号，并支持 `local.properties` 中的 `signing.storeFile`、`signing.storePassword`、`signing.keyAlias`、`signing.keyPassword`；签名文件和密码不提交到仓库。
+本地 Release 使用 `:app:assembleRelease :instrumentation-target:assembleRelease`。两个模块共用 `gradle.properties` 的版本号，读取 `local.properties` 中的 `signing.storeFile`、`signing.storePassword`、`signing.keyAlias`、`signing.keyPassword`；也支持对应的 `NRFR_SIGNING_STORE_FILE`、`NRFR_SIGNING_STORE_PASSWORD`、`NRFR_SIGNING_KEY_ALIAS`、`NRFR_SIGNING_KEY_PASSWORD` 环境变量，环境变量优先。签名文件和密码不提交到仓库。
 
 ## 发布
 
-[Build Release](.github/workflows/build.yml) 在推送 `v*` 标签时检查标签与应用版本一致，运行单元测试和 Lint，打包 APK，并根据 `CHANGELOG.md` 创建 GitHub Release。每个版本仍提供：
+[Build Release](.github/workflows/build.yml) 在推送 `v*` 标签时检查标签与应用版本一致，运行单元测试和 Lint，构建 Release APK；固定签名配置完整时，才根据 `CHANGELOG.md` 创建 GitHub Release。本次发布在本机签名后上传 APK。CI 支持从仓库加密 Secrets 读取 `NRFR_RELEASE_KEYSTORE_BASE64`、`NRFR_RELEASE_STORE_PASSWORD`、`NRFR_RELEASE_KEY_ALIAS`、`NRFR_RELEASE_KEY_PASSWORD`，但本次未上传密钥或设置这些 Secrets。全部缺少时只执行 Release 检查并跳过自动发布，部分缺少时直接失败；完整配置后上传前会验证固定证书并拒绝可调试 APK。每个版本仍提供：
 
 - `nrfr-<version>.apk`：主应用，Android 12+ 只需此 APK。
 - `nrfr-instrumentation-target-<version>.apk`：Android 10–11 使用的 helper。

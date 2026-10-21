@@ -4,7 +4,7 @@
 
 设备：Solana Mobile Seeker，Android 16 / API 36
 
-实测版本：Nrfr 1.0.4（versionCode 4），本地 Release 构建；单 APK 改造随后整理为 v1.0.5 发布
+实测版本：Nrfr 1.0.4（versionCode 4），本地 Release 构建；单 APK 改造随后以固定 Release 证书发布为 v1.0.6
 
 ## 结论
 
@@ -71,7 +71,7 @@ Gradle 8.9、AGP 8.7.0、Kotlin 2.0.0、JBR 21.0.11。最终执行：
 
 ## 交付与本地证据
 
-实测安装包文件名：`nrfr-1.0.4-single-apk-release-device.apk`。这是本地验证包，未作为 GitHub Release 资产上传；正式版本请从 [v1.0.5](https://github.com/baiyanwu/Nrfr/releases/tag/v1.0.5) 下载。
+实测安装包文件名：`nrfr-1.0.4-single-apk-release-device.apk`。这是本地验证包，未作为 GitHub Release 资产上传；正式版本请从 [v1.0.6](https://github.com/baiyanwu/Nrfr/releases/tag/v1.0.6) 下载。
 
 该包沿用 Seeker 已有安装的证书，供覆盖更新；`debuggable=false`。
 
@@ -81,3 +81,12 @@ Gradle 8.9、AGP 8.7.0、Kotlin 2.0.0、JBR 21.0.11。最终执行：
 - 其中包含签名安装记录、移除前后结果、运行日志、完整构建日志、Lint 报告、源码哈希和最终原始截图。
 
 以上为发布前实机验证记录。v1.0.5 发布整理保留同一配置执行逻辑，排除工作区原有的诊断页面和日志功能，并单独构建检查发布源码。设备验证不代表 GitHub 发布包的签名或构建变体与本地验证包一致。helper 模块继续保留给旧系统，Seeker 当前用户已不再安装 helper。
+
+## 固定签名发布（v1.0.6）
+
+v1.0.5 的临时 Debug 签名自动发布在取消前已完成，随后撤为草稿，保留原标签历史。v1.0.6 改用项目既有 `keystore/nrfr-release.jks`，别名 `Nrfr`；主应用与 helper 共用该 Release 证书，证书 SHA-256 为 `72c45f53872baa403d9bfb1c1f3eb6bedba6dabd1b7ab29c42f7d807b7131d49`。本次在本机签名，只上传 APK，密钥和密码未上传到 GitHub。CI 支持从加密的仓库 Secrets 读取签名材料，但本次未设置；缺少全部 CI 签名配置时只执行 Release 检查，不自动发布。配置完整后发布前校验证书并拒绝可调试 APK。该证书与本地 Seeker 实测包和 v1.0.4 公开包均不同，不能直接覆盖升级；本次没有为切换证书而卸载手机应用或清除数据。
+
+本机 v1.0.6 固定签名检查通过：14 项 Release 单元测试全部通过，Lint 0 错误、34 条警告；两个 APK 均为 `1.0.6` / `6`、`debuggable=false`，证书与现有 JKS 一致。主 APK 保留自身与 legacy 两个 Instrumentation 入口。
+
+- 主 APK SHA-256：`da6182ad5c3fd26fe94edc04b6cba9359e21020da8271e73c50624111d85e22c`
+- helper APK SHA-256：`6b8e3a00b13e10078cca2a6d66bf4caaabb21c826d2942fc1355ae8b5e6b7d97`

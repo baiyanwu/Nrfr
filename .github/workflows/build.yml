@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version, for example v1.0.5"
+        description: "Release version, for example v1.0.6"
         required: true
         type: string
       prerelease:
@@ -88,26 +88,80 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Test and build Android APKs
-        run: >-
-          ./gradlew --no-daemon --stacktrace
-          :app:testDebugUnitTest
-          :app:lintDebug
-          :app:assembleDebug
-          :instrumentation-target:assembleDebug
+      - name: Configure optional CI release signing
+        id: signing
+        shell: bash
+        env:
+          NRFR_SIGNING_KEYSTORE_BASE64: ${{ secrets.NRFR_RELEASE_KEYSTORE_BASE64 }}
+          NRFR_SIGNING_STORE_FILE: ${{ runner.temp }}/nrfr-release.jks
+          NRFR_SIGNING_STORE_PASSWORD: ${{ secrets.NRFR_RELEASE_STORE_PASSWORD }}
+          NRFR_SIGNING_KEY_ALIAS: ${{ secrets.NRFR_RELEASE_KEY_ALIAS }}
+          NRFR_SIGNING_KEY_PASSWORD: ${{ secrets.NRFR_RELEASE_KEY_PASSWORD }}
+        run: |
+          python3 - <<'PY'
+          import base64
+          import os
+          from pathlib import Path
+
+          required = (
+              "NRFR_SIGNING_KEYSTORE_BASE64", "NRFR_SIGNING_STORE_PASSWORD",
+              "NRFR_SIGNING_KEY_ALIAS", "NRFR_SIGNING_KEY_PASSWORD",
+          )
+          missing = [key for key in required if not os.environ.get(key)]
+          output = Path(os.environ["GITHUB_OUTPUT"])
+          if len(missing) == len(required):
+              with output.open("a") as stream:
+                  stream.write("ready=false\n")
+              print("No CI signing secrets: run Release checks and skip automatic publishing.")
+              raise SystemExit(0)
+          if missing:
+              raise SystemExit("Missing release signing secrets: " + ", ".join(missing))
+          path = Path(os.environ["NRFR_SIGNING_STORE_FILE"])
+          path.write_bytes(base64.b64decode(os.environ["NRFR_SIGNING_KEYSTORE_BASE64"], validate=True))
+          path.chmod(0o600)
+          with output.open("a") as stream:
+              stream.write("ready=true\n")
+              stream.write("store_file=" + str(path) + "\n")
+          PY
+
+      - name: Test and build Release APKs
+        shell: bash
+        env:
+          NRFR_SIGNING_STORE_FILE: ${{ steps.signing.outputs.store_file }}
+          NRFR_SIGNING_STORE_PASSWORD: ${{ secrets.NRFR_RELEASE_STORE_PASSWORD }}
+          NRFR_SIGNING_KEY_ALIAS: ${{ secrets.NRFR_RELEASE_KEY_ALIAS }}
+          NRFR_SIGNING_KEY_PASSWORD: ${{ secrets.NRFR_RELEASE_KEY_PASSWORD }}
+        run: |
+          ./gradlew --no-daemon --stacktrace \
+            :app:testReleaseUnitTest \
+            :app:lintRelease \
+            :app:assembleRelease \
+            :instrumentation-target:assembleRelease
 
       - name: Collect release assets
+        if: steps.signing.outputs.ready == 'true'
         shell: bash
         env:
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
         run: |
           mkdir -p artifacts
-          cp app/build/outputs/apk/debug/app-debug.apk "artifacts/nrfr-${RELEASE_VERSION}.apk"
-          cp instrumentation-target/build/outputs/apk/debug/instrumentation-target-debug.apk "artifacts/nrfr-instrumentation-target-${RELEASE_VERSION}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "artifacts/nrfr-${RELEASE_VERSION}.apk"
+          cp instrumentation-target/build/outputs/apk/release/instrumentation-target-release.apk "artifacts/nrfr-instrumentation-target-${RELEASE_VERSION}.apk"
+          EXPECTED_CERT="72c45f53872baa403d9bfb1c1f3eb6bedba6dabd1b7ab29c42f7d807b7131d49"
+          for APK in artifacts/*.apk; do
+            CERTS=$("${ANDROID_HOME}/build-tools/35.0.0/apksigner" verify --print-certs "${APK}")
+            grep -F "Signer #1 certificate SHA-256 digest: ${EXPECTED_CERT}" <<< "${CERTS}"
+            BADGING=$("${ANDROID_HOME}/build-tools/35.0.0/aapt" dump badging "${APK}")
+            if grep -q '^application-debuggable' <<< "${BADGING}"; then
+              echo "Refusing to publish a debuggable APK: ${APK}"
+              exit 1
+            fi
+          done
           cd artifacts
           sha256sum ./*.apk > SHA256SUMS.txt
 
       - name: Upload workflow artifact
+        if: steps.signing.outputs.ready == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: nrfr-android-${{ steps.version.outputs.version }}
@@ -117,6 +171,7 @@ jobs:
           compression-level: 0
 
       - name: Create GitHub Release
+        if: steps.signing.outputs.ready == 'true'
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.version }}
@@ -128,3 +183,8 @@ jobs:
             artifacts/nrfr-${{ steps.version.outputs.version }}.apk
             artifacts/nrfr-instrumentation-target-${{ steps.version.outputs.version }}.apk
             artifacts/SHA256SUMS.txt
+
+      - name: Remove temporary signing file
+        if: always()
+        shell: bash
+        run: rm -f "${RUNNER_TEMP}/nrfr-release.jks"

@@ -4,7 +4,29 @@
 
 This file records notable changes for each Nrfr release.
 
+## v1.0.6 — 2026-10-21
+
+### 中文
+
+- 使用项目既有 `nrfr-release.jks` 固定签名，主应用与 helper 均发布不可调试的 Release 构建，版本统一为 `1.0.6`（versionCode `6`）。
+- 本次在本机使用现有 JKS 签名后上传 APK，密钥和密码保留在本机。CI 支持仓库加密 Secrets，配置完整时校验证书后自动发布；全部未配置时只运行 Release 检查，部分缺失时直接失败。
+- 包含单 APK 改造：Android 12+ 使用主 APK＋Shizuku 和 `--no-restart`；Android 10–11 保留同版本 helper 路径。Android 8–9 保留旧 Binder 回退，原生系统缺少覆盖接口，能力取决于 ROM。
+- 保留配置执行串行化、严格结果检查、Android 10 双参数接口兼容，以及仅在明确没有持久化覆盖时跳过持久化清理的修正。
+- Seeker / Android 16 已验证无 helper 修改、还原及原配置恢复；Android 8–11 和真实持久化覆盖清理尚未完成本轮实机验证。
+- **升级说明：** v1.0.4 公开包和 Seeker 本地实测包使用其他证书，不能直接覆盖升级到本版。v1.0.5 临时 Debug 签名版本已撤为草稿；后续版本固定使用本次 Release 证书。
+
+### English
+
+- Sign both APKs with the existing project `nrfr-release.jks` and publish non-debuggable Release builds at `1.0.6` (versionCode `6`).
+- This release is signed locally with the existing JKS; only APKs are uploaded, while the key and passwords remain local. CI supports encrypted repository Secrets: complete configuration enables verified signing and publishing, no configuration runs Release checks only, and partial configuration fails.
+- Include single-APK support: Android 12+ uses the main APK, Shizuku, and `--no-restart`; Android 10–11 retains the matching helper. Android 8–9 retains its Binder fallback, with override support dependent on the ROM because stock systems lack the API.
+- Retain serialized operations, strict completion checks, Android 10's two-argument override API support, and the persistent-reset fix that skips clearing only when absence is explicitly confirmed.
+- Changes, reset, and original-configuration restoration were verified without the helper on a Seeker running Android 16. Android 8–11 devices and clearing actual persistent overrides remain unverified in this run.
+- **Upgrade:** the public v1.0.4 APK and the local Seeker validation package use different certificates and cannot be updated in place to this version. The temporary Debug-signed v1.0.5 release was withdrawn to a draft; future releases use this fixed Release certificate.
+
 ## v1.0.5 — 2026-10-21
+
+**已撤为草稿 / Withdrawn to draft:** 临时 Debug 签名构建，固定 Release 签名请使用 v1.0.6。
 
 ### 中文
 

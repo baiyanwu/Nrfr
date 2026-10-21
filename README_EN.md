@@ -4,7 +4,7 @@
 
 A Shizuku-powered, root-free SIM carrier configuration tool.
 
-## v1.0.5: one APK on Android 12+
+## v1.0.6: one APK on Android 12+
 
 On Android 12 and later, install the main APK and keep [Shizuku](https://github.com/RikkaApps/Shizuku) installed, running, and authorized. Operations use self-targeted Instrumentation with `--no-restart` to retain the main app process.
 
@@ -25,12 +25,12 @@ The minimum installation version remains Android 8. **Installation compatibility
 
 ## Installation and upgrades
 
-Download APKs from the [v1.0.5 release](https://github.com/baiyanwu/Nrfr/releases/tag/v1.0.5) and start Shizuku first.
+Download APKs from the [v1.0.6 release](https://github.com/baiyanwu/Nrfr/releases/tag/v1.0.6) and start Shizuku first.
 
-**Android 12 and later:** install only `nrfr-v1.0.5.apk`.
+**Android 12 and later:** install only `nrfr-v1.0.6.apk`.
 
 ```bash
-adb install -r nrfr-v1.0.5.apk
+adb install -r nrfr-v1.0.6.apk
 ```
 
 An existing helper can remain installed; the main app does not depend on it on these systems. You can remove it after confirming that configuration changes and reset work normally.
@@ -38,15 +38,17 @@ An existing helper can remain installed; the main app does not depend on it on t
 **Android 10–11:** install both APKs from the same release, starting with the helper.
 
 ```bash
-adb install -r nrfr-instrumentation-target-v1.0.5.apk
-adb install -r nrfr-v1.0.5.apk
+adb install -r nrfr-instrumentation-target-v1.0.6.apk
+adb install -r nrfr-v1.0.6.apk
 ```
 
 The helper package is `com.github.nrfr.instrumentationtarget`. It has no launcher icon and does not need to be opened. Its module and execution path remain available for older systems.
 
 **Android 8–9:** the main APK retains the legacy fallback, but stock systems lack the override API. Installing the helper cannot supply a missing platform API.
 
-Automatic releases continue to use the existing Debug signing build. In-place upgrades require matching signing certificates; local builds, historical releases, and device-validation packages can use different certificates. Check the package source and certificate if an update is rejected.
+Starting with v1.0.6, public APKs use the fixed Release certificate from the existing `nrfr-release.jks`. The main app and helper share the certificate and are non-debuggable Release builds. Certificate SHA-256: `72c45f53872baa403d9bfb1c1f3eb6bedba6dabd1b7ab29c42f7d807b7131d49`.
+
+The public v1.0.4 APK used a different Debug certificate and cannot be updated in place to this release. The Seeker validation package also uses a different certificate. Preserve any required app data and confirm a migration approach before changing certificates. The temporary Debug-signed v1.0.5 release was withdrawn to a draft. Future versions signed with this same Release certificate support in-place upgrades.
 
 ## Reporting issues
 
@@ -62,11 +64,11 @@ Use JDK 17 or a compatible version and Android SDK 35. The repository includes t
 
 Outputs are `app/build/outputs/apk/debug/app-debug.apk` and `instrumentation-target/build/outputs/apk/debug/instrumentation-target-debug.apk`.
 
-For local Release builds, use `:app:assembleRelease :instrumentation-target:assembleRelease`. Both modules share the version in `gradle.properties` and support `signing.storeFile`, `signing.storePassword`, `signing.keyAlias`, and `signing.keyPassword` in `local.properties`. Keep signing files and passwords out of version control.
+For local Release builds, use `:app:assembleRelease :instrumentation-target:assembleRelease`. Both modules share the version in `gradle.properties` and read `signing.storeFile`, `signing.storePassword`, `signing.keyAlias`, and `signing.keyPassword` from `local.properties`. The corresponding `NRFR_SIGNING_STORE_FILE`, `NRFR_SIGNING_STORE_PASSWORD`, `NRFR_SIGNING_KEY_ALIAS`, and `NRFR_SIGNING_KEY_PASSWORD` environment variables take precedence. Keep signing files and passwords out of version control.
 
 ## Publishing
 
-[Build Release](.github/workflows/build.yml) checks tag/version consistency, runs unit tests and Lint, builds APKs, and creates a GitHub Release from `CHANGELOG.md` when a `v*` tag is pushed. Each release still includes:
+[Build Release](.github/workflows/build.yml) checks tag/version consistency, runs unit tests and Lint, builds Release APKs when a `v*` tag is pushed. With complete fixed-signing configuration, it creates a GitHub Release from `CHANGELOG.md`. This release is signed locally before upload. CI supports `NRFR_RELEASE_KEYSTORE_BASE64`, `NRFR_RELEASE_STORE_PASSWORD`, `NRFR_RELEASE_KEY_ALIAS`, and `NRFR_RELEASE_KEY_PASSWORD` in encrypted repository Secrets, but these Secrets were not configured and no private key was uploaded for this release. No configuration runs Release checks and skips automatic publishing; partial configuration fails. With complete configuration, publishing verifies the fixed certificate and rejects debuggable APKs before upload. Each release still includes:
 
 - `nrfr-<version>.apk`: the main app, the only APK needed on Android 12+.
 - `nrfr-instrumentation-target-<version>.apk`: the helper for Android 10–11.
